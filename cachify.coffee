@@ -24,9 +24,13 @@ bridge = new EventEmitter
 # Quite conceivable that a user may have 10+ accounts,
 bridge.setMaxListeners(100)
 
+active = false
+
 
 module.exports = (expiry = 60, redisPort = 6379, redisHost = "localhost") ->
-
+  if active
+    return throw new Error("cachify should only be initialised once")
+  active = true
   pubsub = redis.createClient(redisPort, redisHost)
   store = redis.createClient(redisPort, redisHost)
 

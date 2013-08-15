@@ -13,7 +13,7 @@ describe 'cachify', ->
 
     id = 1
 
-    cachified = cachify(id, fn)
+    cachified = cachify(id, 60, fn)
 
     cachified {}, (err, result) ->
       equal result, "yes"
@@ -32,7 +32,7 @@ describe 'cachify', ->
 
     id = 1
 
-    cachified = cachify(id, fn)
+    cachified = cachify(id, 60, fn)
 
     cachified {}, (err, result) ->
       equal result, "yes"
@@ -57,7 +57,7 @@ describe 'cachify', ->
 
     id = 1
 
-    cachified = cachify(id, fn)
+    cachified = cachify(id, 60, fn)
 
     cachified {}, (err, result) ->
       equal result, "yes"
@@ -76,7 +76,7 @@ describe 'cachify', ->
 
     idFn = (data) -> data.id
 
-    cachified = cachify(idFn, fn)
+    cachified = cachify(idFn, 60, fn)
 
     cachified {id:11}, (err, result) ->
       equal result, 11
@@ -86,6 +86,30 @@ describe 'cachify', ->
       done(err)
 
   it 'expires correctly', (done) ->
+    cachify = require('../index')()
+    firstResult = null
+
+    fn = (data, callback) ->
+      setTimeout ->
+        callback(null, Date.now())
+      , 100
+
+    cachified = cachify("expiry", 1, fn)
+
+    cachified {}, (err, result) ->
+      firstResult = result
+
+      cachified {}, (err, result) ->
+        equal result, firstResult
+
+        setTimeout ->
+          cachified {}, (err, result) ->
+            notEqual result, firstResult
+            done()
+        , 1000
+
+
+  it 'expires correctly with delay passed in at init', (done) ->
     cachify = require('../index')(1)
     firstResult = null
 
@@ -94,7 +118,7 @@ describe 'cachify', ->
         callback(null, Date.now())
       , 100
 
-    cachified = cachify("expiry", fn)
+    cachified = cachify("expiry-init", fn)
 
     cachified {}, (err, result) ->
       firstResult = result

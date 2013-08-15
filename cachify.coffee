@@ -24,24 +24,25 @@ bridge = new EventEmitter
 # Quite conceivable that a user may have 10+ accounts,
 bridge.setMaxListeners(100)
 
-active = false
+pubsub = null
+store = null
 
 
-module.exports = (expiry = 60, redisPort = 6379, redisHost = "localhost") ->
-  if active
-    return throw new Error("cachify should only be initialised once")
-  active = true
-  pubsub = redis.createClient(redisPort, redisHost)
-  store = redis.createClient(redisPort, redisHost)
-
-
-  # Set redis pubsub messages to be emitted by the local event emitter
-  pubsub.on "message", (channel, message) ->
-    bridge.emit message
-  pubsub.subscribe("cache")
+module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
+  unless pubsub
+    pubsub = redis.createClient(redisPort, redisHost)
+    store = redis.createClient(redisPort, redisHost)
+    # Set redis pubsub messages to be emitted by the local event emitter
+    pubsub.on "message", (channel, message) ->
+      bridge.emit message
+    pubsub.subscribe("cache")
 
   # The wrapping function, takes an id (string or function), and a function that has 2 arguments: data, callback
-  (idFn, fn) ->
+  (idFn, expiry, fn) ->
+    if not fn
+      fn = expiry
+      expiry = expiryMain
+
 
     # The wrapped function to return
     (data, callback) ->

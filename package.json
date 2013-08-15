@@ -1,0 +1,30 @@
+{
+  "name": "cachify",
+  "version": "0.0.1",
+  "description": "Simple Redis Caching Library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bluespeckfinancial/cachify.git"
+  },
+  "keywords": [
+    "redis",
+    "cache"
+  ],
+  "author": "Dave Tonge",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "gitHead": "9873ca7c14d16e1bc9c94cc70dfce210c1aad16c",
+  "bugs": {
+    "url": "https://github.com/bluespeckfinancial/cachify/issues"
+  },
+  "dependencies": {
+    "underscore": "~1.5.1",
+    "lru-cache": "~2.3.0",
+    "redis": "~0.8.4",
+    "coffee-script": "~1.6.3"
+  }
+}

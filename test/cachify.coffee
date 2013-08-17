@@ -106,7 +106,7 @@ describe 'cachify', ->
           cachified {}, (err, result) ->
             notEqual result, firstResult
             done()
-        , 1000
+        , 2000
 
 
   it 'expires correctly with delay passed in at init', (done) ->
@@ -130,6 +130,6 @@ describe 'cachify', ->
           cachified {}, (err, result) ->
             notEqual result, firstResult
             done()
-        , 1000
+        , 2000
 
 

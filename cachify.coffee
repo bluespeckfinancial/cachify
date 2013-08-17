@@ -96,7 +96,7 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
             # Case for retrieved data
             #console.log "cache hit", id
             if result.status is "error" then err = result.err
-          return callback err, result
+            return callback err, result
 
         else
           # Case for no data or an error

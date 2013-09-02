@@ -46,6 +46,7 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
 
     # The wrapped function to return
     (data, callback) ->
+      throw new Error("Data & callback expected only one supplied") unless callback
 
       # If the id is provided as a function, then retrive the id from the data
       if _.isFunction(idFn)

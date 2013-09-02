@@ -189,3 +189,7 @@ describe 'cachify', ->
         , 2000
 
 
+  it "fails", ->
+    ok(false)
+
+

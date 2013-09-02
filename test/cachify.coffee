@@ -1,5 +1,7 @@
 {ok, equal, notEqual} = require("assert")
 _ = require "underscore"
+rand = -> Date.now() + Math.random()
+
 
 
 describe 'cachify', ->
@@ -11,13 +13,67 @@ describe 'cachify', ->
         callback(null, "yes")
       , 500
 
-    id = 1
+    id = rand()
 
     cachified = cachify(id, 60, fn)
 
     cachified {}, (err, result) ->
       equal result, "yes"
       done(err)
+
+  it 'works with errors sync', (done) ->
+    # When multiple synchronous calls are made to a cachified function
+    # Any errors should be propogated to all the calls
+    cachify = require('../index')()
+    called = false
+
+    fn = (data, callback) ->
+      setTimeout ->
+        if called
+          callback(null, "yes")
+        else
+          called = true
+          callback("error")
+      , 100
+
+    id = rand()
+
+    cachified = cachify(id, 60, fn)
+
+    cachified {}, (err) ->
+      equal err, "error"
+
+    cachified {}, (err2) ->
+      equal err2, "error"
+      done()
+
+
+  it 'works with errors async', (done) ->
+    # cachified functions that result in an error shouldn't persist
+    cachify = require('../index')()
+    called = false
+
+    fn = (data, callback) ->
+      setTimeout ->
+        if called
+          callback(null, "yes")
+        else
+          called = true
+          callback("error")
+      , 500
+
+    id = rand()
+
+    cachified = cachify(id, 60, fn)
+
+    cachified {}, (err, result) ->
+      equal err, "error"
+
+      cachified {}, (err2, result2) ->
+        ok not err2, "Error shouldn't exist on second call"
+        equal result2, "yes"
+        done(err2)
+
 
 
   it 'works with multiple calls', (done) ->
@@ -30,7 +86,7 @@ describe 'cachify', ->
 
     fn = _.once(fn)
 
-    id = 1
+    id = rand()
 
     cachified = cachify(id, 60, fn)
 
@@ -55,7 +111,7 @@ describe 'cachify', ->
 
     fn = _.once(fn)
 
-    id = 1
+    id = rand()
 
     cachified = cachify(id, 60, fn)
 
@@ -106,7 +162,7 @@ describe 'cachify', ->
           cachified {}, (err, result) ->
             notEqual result, firstResult
             done()
-        , 1000
+        , 2000
 
 
   it 'expires correctly with delay passed in at init', (done) ->
@@ -130,6 +186,6 @@ describe 'cachify', ->
           cachified {}, (err, result) ->
             notEqual result, firstResult
             done()
-        , 1000
+        , 2000
 
 

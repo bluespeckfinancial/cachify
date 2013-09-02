@@ -4,7 +4,7 @@
   "description": "Simple Redis Caching Library",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node_modules/mocha/bin/mocha -R tap"
   },
   "repository": {
     "type": "git",
@@ -26,5 +26,8 @@
     "lru-cache": "~2.3.0",
     "redis": "~0.8.4",
     "coffee-script": "~1.6.3"
+  },
+  "devDependencies": {
+    "mocha": "~1.12.1"
   }
 }

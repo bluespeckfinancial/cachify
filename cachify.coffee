@@ -40,8 +40,12 @@ store = null
 
 module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
   unless pubsub
-    pubsub = redis.createClient(redisPort, redisHost)
-    store = redis.createClient(redisPort, redisHost)
+    if _.isNumber(redisPort)
+      pubsub = redis.createClient(redisPort, redisHost)
+      store = redis.createClient(redisPort, redisHost)
+    else
+      pubsub = redisPort
+      store = redisHost
     # Set redis pubsub messages to be emitted by the local event emitter
     pubsub.on "message", (channel, message) ->
       log "pubsub", message

@@ -1,6 +1,6 @@
 {
   "name": "redis-cachify",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "Simple Redis Caching Library",
   "main": "index.js",
   "scripts": {
@@ -25,7 +25,8 @@
     "underscore": "~1.5.1",
     "lru-cache": "~2.3.0",
     "redis": "~0.8.4",
-    "coffee-script": "~1.6.3"
+    "coffee-script": "~1.6.3",
+    "debug": "~0.7.4"
   },
   "devDependencies": {
     "mocha": "~1.12.1"

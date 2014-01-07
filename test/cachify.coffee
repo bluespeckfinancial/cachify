@@ -78,24 +78,54 @@ describe 'cachify', ->
 
   it 'works with multiple calls', (done) ->
     cachify = require('../index')()
+    id = 0
 
     fn = (data, callback) ->
       setTimeout ->
-        callback(null, "yes")
+        id += 1
+        if id > 1 then throw new Error("called too many times")
+        callback(null, id)
       , 500
 
-    fn = _.once(fn)
-
-    id = rand()
-
-    cachified = cachify(id, 60, fn)
+    cachified = cachify(rand(), 60, fn)
 
     cachified {}, (err, result) ->
-      equal result, "yes"
+      equal result, 1
 
     cachified {}, (err, result) ->
-      equal result, "yes"
+      equal result, 1
       done(err)
+
+  it 'works with multiple async calls', (done) ->
+    cachify = require('../index')()
+    id = 0
+
+    fn = (data, callback) ->
+      setTimeout ->
+        id += 1
+        if id > 1 then throw new Error("called too many times")
+        callback(null, id)
+      , 500
+
+    cachified = cachify(rand(), 60, fn)
+
+    setTimeout ->
+      cachified {}, (err, result) ->
+        equal result, 1
+    , 50
+
+    setTimeout ->
+      cachified {}, (err, result) ->
+        equal result, 1
+    , 10
+
+    setTimeout ->
+      cachified {}, (err, result) ->
+        equal result, 1
+        done(err)
+    , 1000
+
+
 
   it 'works with multiple synchronous calls only call fn once', (done) ->
     cachify = require('../index')()
@@ -189,7 +219,5 @@ describe 'cachify', ->
         , 2000
 
 
-  it "fails", ->
-    ok(false)
 
 

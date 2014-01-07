@@ -9,10 +9,8 @@ Check if id exists in the database
 
 
 ###
-debug = false
 
-log = -> if debug then console.log.apply(console, arguments)
-
+debug = require("debug")("cachify")
 parse = (str) ->
   try
     JSON.parse(str)
@@ -48,7 +46,7 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
       store = redisHost
     # Set redis pubsub messages to be emitted by the local event emitter
     pubsub.on "message", (channel, message) ->
-      log "pubsub", message
+      debug "pubsub: #{message}"
       bridge.emit message
     pubsub.subscribe("cache")
 
@@ -74,7 +72,7 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
 
       # The listener function to be added to the bridge
       listener = ->
-        log "listener called for:" + id
+        debug "listener called for:" + id
         store.get id, (err, result) ->
           result = parse(result)
           if result?.status is "pending"
@@ -86,23 +84,23 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
           callback(err, result)
 
       get = ->
-        log "get called for:" + id
+        debug "get called for:" + id
         fn data, (err, result) ->
-          log "get callback for:" + id
+          debug "get callback for:" + id
           localCache.del(id)
           if err
-            log "err in callback for:" + id
+            debug "err in callback for:" + id
             toSave = {status:"error", err}
           else
             toSave = {status: "success", result}
-            log "setting result for" + id
+            debug "setting result for" + id
           store.set id, JSON.stringify(toSave), (err2) ->
             store.publish("cache", id)
             store.expire id, expiry
             callback(err ? err2, result)
 
 
-      log "checking store"
+      debug "checking store"
       store.get id, (err, result) ->
         # Get the result from the redis store
         # Three outcomes, exists, pending, doesn't exist
@@ -114,21 +112,20 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
           status = "pending"
 
         status ?= "miss"
-        log status, "status"
-
+        debug "status: #{status}"
 
 
 
         switch status
           when "miss", "error"
-            log "cache miss"
+            debug "cache miss"
             localCache.set(id, true)
             store.set id, JSON.stringify({status:"pending"}), ->
               store.expire id, 10 # 10 second expiry in case the call fails
             get()
 
           when "pending"
-            log "cache pending", id, result
+            debug "cache pending: #{id} - #{result}"
             bridge.once id, listener
             # Set up a timeout, in case the pubsub event is never called
             setTimeout ->
@@ -137,6 +134,6 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
             , (10 * 1000)
 
           when "success"
-            log "cache hit", id
+            debug "cache hit: #{id}"
             callback err, result.result
 

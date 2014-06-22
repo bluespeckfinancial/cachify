@@ -45,11 +45,22 @@ This library currently expects all functions that it as applied to, to have the 
 
 Callbacks are standard Node-style callbacks that are expected to receive an optional error and then a result.
 
-`id` can be a string, e.g. - `"usd2gbp'` or a function, e.g. `(data) -> "userToken:" + data.userId
+`id` can be a string, e.g. - `"usd2gbp'` or a function, e.g. `(data) -> "userToken:" + data.userId`
+
 If the `id` argument is a function, then it will be passed the data argument passed in each time the function is called.
 
 A cachified version of a function can be used in excactly the same way as the function that was passed into it.
-The difference being that the result will be cached in Redis and returned much sooner.
+The difference being that the result will be cached in Redis and returned much sooner. This can be very useful in
+the following scenario:
+
+##### Getting a third party auth toekn that lasts for n minutes
+
+Application logic is vastly simplified as all you need to do is "cachify" the function that goes and gets the token.
+Any method running in any process (on the same or different machines) can now reliably call that method. The function
+will return either a fresh token, or a cached token that will automatically expire after n minutes. If 3 methods
+call the function in the same tick of the event loop, the original function will only be called once - yet the callbacks
+from all 3 functions will correctly be called
+
 
 If you make a 10 calls to cachifiedFunction (with the same data), then myFunction will only be called once.
 
@@ -75,3 +86,7 @@ If you are having problems, try running your program with the environment variab
 This will print a whole load of debugging information to the console.
 
 
+### Todo
+
+ - Enforce Redis 2.6 and use new set method signature with expiry
+ - More tests for in process caching

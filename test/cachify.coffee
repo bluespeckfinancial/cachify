@@ -2,11 +2,10 @@
 _ = require "underscore"
 rand = -> Date.now() + Math.random()
 
-
+cachify = require('../index')({cacheInProcess:true})
 
 describe 'cachify', ->
   it 'works with defaults', (done) ->
-    cachify = require('../index')()
 
     fn = (data, callback) ->
       setTimeout ->
@@ -24,7 +23,6 @@ describe 'cachify', ->
   it 'works with errors sync', (done) ->
     # When multiple synchronous calls are made to a cachified function
     # Any errors should be propogated to all the calls
-    cachify = require('../index')()
     called = false
 
     fn = (data, callback) ->
@@ -50,7 +48,6 @@ describe 'cachify', ->
 
   it 'works with errors async', (done) ->
     # cachified functions that result in an error shouldn't persist
-    cachify = require('../index')()
     called = false
 
     fn = (data, callback) ->
@@ -77,7 +74,6 @@ describe 'cachify', ->
 
 
   it 'works with multiple calls', (done) ->
-    cachify = require('../index')()
     id = 0
 
     fn = (data, callback) ->
@@ -97,7 +93,6 @@ describe 'cachify', ->
       done(err)
 
   it 'works with multiple async calls', (done) ->
-    cachify = require('../index')()
     id = 0
 
     fn = (data, callback) ->
@@ -128,7 +123,6 @@ describe 'cachify', ->
 
 
   it 'works with multiple synchronous calls only call fn once', (done) ->
-    cachify = require('../index')()
     called = false
 
     fn = (data, callback) ->
@@ -153,7 +147,6 @@ describe 'cachify', ->
       done(err)
 
   it 'works with dynamic id', (done) ->
-    cachify = require('../index')()
 
     fn = (data, callback) ->
       setTimeout ->
@@ -172,7 +165,6 @@ describe 'cachify', ->
       done(err)
 
   it 'expires correctly', (done) ->
-    cachify = require('../index')()
     firstResult = null
 
     fn = (data, callback) ->
@@ -196,7 +188,6 @@ describe 'cachify', ->
 
 
   it 'expires correctly with delay passed in at init', (done) ->
-    cachify = require('../index')(1)
     firstResult = null
 
     fn = (data, callback) ->
@@ -204,7 +195,7 @@ describe 'cachify', ->
         callback(null, Date.now())
       , 100
 
-    cachified = cachify("expiry-init", fn)
+    cachified = cachify("expiry-init", 1, fn)
 
     cachified {}, (err, result) ->
       firstResult = result

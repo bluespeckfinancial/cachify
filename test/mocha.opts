@@ -2,6 +2,6 @@
 --ui bdd
 --growl
 --bail
---compilers coffee:coffee-script
+--compilers coffee:coffee-script/register
 --check-leaks
 --timeout 2000000

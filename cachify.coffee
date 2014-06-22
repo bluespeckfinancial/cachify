@@ -1,60 +1,77 @@
-###
-  Basic cache pub / sub system.
-
-When function called, get the id
-Check if id exists in the database
-
-
-
-
-
-###
-
 debug = require("debug")("cachify")
+redis = require "redis"
+LRU = require "lru-cache"
+{EventEmitter} = require "events"
+_ = require "underscore"
+
 parse = (str) ->
   try
     JSON.parse(str)
   catch e
     {}
 
-redis = require "redis"
-LRU = require "lru-cache"
-{EventEmitter} = require "events"
-_ = require "underscore"
 
-# Need an in memory cache to stop duplicate calls to a function
-localCache = LRU
-  maxAge: 10 * 1000
-  max: 1000
+class LocalCache
 
-# We use a local event emitter instance for event binding / unbinding
-bridge = new EventEmitter
-# Quite conceivable that a user may have 10+ accounts,
-bridge.setMaxListeners(100)
+  constructor: ->
+    @data = {}
 
-pubsub = null
-store = null
+  set: (id, result, expiry) ->
+    if @data[id]
+      clearTimeout @data[id].timer
+    timer = setTimeout =>
+      @data[id] = null
+    , (expiry - Date.now())
+    @data[id] = {result, expiry, timer}
+    result
+
+  get: (id) ->
+    result = @data[id]
+    if result and (result.expiry > Date.now())
+      result.result
 
 
-module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
-  unless pubsub
-    if _.isNumber(redisPort)
-      pubsub = redis.createClient(redisPort, redisHost)
-      store = redis.createClient(redisPort, redisHost)
-    else
-      pubsub = redisPort
-      store = redisHost
-    # Set redis pubsub messages to be emitted by the local event emitter
-    pubsub.on "message", (channel, message) ->
+
+class Cachify
+
+  defaults:
+    defaultExpiry: 60
+    cacheInProcess:false
+    redisChannel: "cache"
+
+  constructor: (opts) ->
+    _.extend @, @defaults, opts
+
+    # Need an in memory cache to stop duplicate calls to a function
+    @localCache = LRU
+      maxAge: 10 * 1000
+      max: 1000
+
+    # We use a local event emitter instance for event binding / unbinding
+    @bridge = new EventEmitter
+    # Quite conceivable that a user may have 10+ accounts,
+    @bridge.setMaxListeners(100)
+
+    @redisPubsub.on "message", (channel, message) =>
       debug "pubsub: #{message}"
-      bridge.emit message
-    pubsub.subscribe("cache")
+      @bridge.emit message
+    @redisPubsub.subscribe(@redisChannel)
 
-  # The wrapping function, takes an id (string or function), and a function that has 2 arguments: data, callback
-  (idFn, expiry, fn) ->
+
+
+  make: (idFn, expiry, fn) =>
     if not fn
       fn = expiry
-      expiry = expiryMain
+      expiry = @defaultExpiry
+    store = @redisStore
+    pubsub = @redisPubsub
+    bridge = @bridge
+    localCache = @localCache
+    if @cacheInProcess
+      resultCache = new LocalCache
+    expiryMs = expiry * 1000
+    redisChannel = @redisChannel
+
 
 
     # The wrapped function to return
@@ -80,7 +97,9 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
           else if result?.status is "error"
             err = result?.err or "Error"
           else if result?.status is "success"
+            if resultCache then resultCache.set id, result.result, result.expires
             result = result.result
+
           callback(err, result)
 
       get = ->
@@ -92,12 +111,20 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
             debug "err in callback for:" + id
             toSave = {status:"error", err}
           else
-            toSave = {status: "success", result}
+            toSave = {status: "success", result, expires: Date.now() + expiryMs}
             debug "setting result for" + id
+          if resultCache then resultCache.set id, result, Date.now() + expiryMs
           store.set id, JSON.stringify(toSave), (err2) ->
-            store.publish("cache", id)
+            store.publish(redisChannel, id)
             store.expire id, expiry
             callback(err ? err2, result)
+
+      if resultCache
+        debug "checking memory cache"
+        result = resultCache.get(id)
+        if result
+          debug "memory cache hit"
+          return callback(null, result)
 
 
       debug "checking store"
@@ -137,3 +164,25 @@ module.exports = (expiryMain = 60, redisPort = 6379, redisHost = "localhost") ->
             debug "cache hit: #{id}"
             callback err, result.result
 
+
+
+
+
+module.exports = (options = 60, depreceatedRedisPort = 6379, depreceatedRedisHost = "localhost") ->
+  # To support deprecated init options
+  if _.isNumber(options)
+    options =
+      defaultExpiry: options
+    if _.isNumber(depreceatedRedisPort)
+      options.redisPort = depreceatedRedisPort
+      options.redisHot = depreceatedRedisHost
+    else
+      options.redisPubsub = depreceatedRedisPort
+      options.redisStore = depreceatedRedisHost
+
+  unless options.redisPubsub and options.redisStore
+    options.redisPubsub = redis.createClient(options.redisPort, options.redisHost)
+    options.redisStore = redis.createClient(options.redisPort, options.redisHost)
+
+  cachify = new Cachify options
+  cachify.make

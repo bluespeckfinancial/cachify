@@ -39,14 +39,13 @@ Once you have a cachify instance you can use it as follows:
 
 `cachifiedFunction = cachify(id, myFunction)`
 
-This library currently expects all functions that it as applied to, to have the following signature:
+This library currently expects all functions that it is applied to, to have the following signature:
 
 ` myFunction = (data, callback) ->`
 
 Callbacks are standard Node-style callbacks that are expected to receive an optional error and then a result.
 
-`id` can be a string, e.g. - `"usd2gbp'` or a function, e.g. `(data) -> "userToken:" + data.userId
-If the `id` argument is a function, then it will be passed the data argument passed in each time the function is called.
+`id` can be a string, e.g. - `"usd2gbp'` or a function, e.g. `(data) -> "userToken:" + data.userId`. If the `id` argument is a function, then it will be passed the data argument passed in each time the function is called.
 
 A cachified version of a function can be used in excactly the same way as the function that was passed into it.
 The difference being that the result will be cached in Redis and returned much sooner.

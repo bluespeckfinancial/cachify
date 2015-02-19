@@ -114,9 +114,8 @@ class Cachify
             toSave = {status: "success", result, expires: Date.now() + expiryMs}
             debug "setting result for" + id
           if resultCache then resultCache.set id, result, Date.now() + expiryMs
-          store.set id, JSON.stringify(toSave), (err2) ->
+          store.set id, JSON.stringify(toSave), 'ex', expiry, (err2) ->
             store.publish(redisChannel, id)
-            store.expire id, expiry
             callback(err ? err2, result)
 
       if resultCache
@@ -147,8 +146,7 @@ class Cachify
           when "miss", "error"
             debug "cache miss"
             localCache.set(id, true)
-            store.set id, JSON.stringify({status:"pending"}), ->
-              store.expire id, 10 # 10 second expiry in case the call fails
+            store.set id, JSON.stringify({status:"pending"}), "ex", 10, -> # 10 second expiry in case the call fails
             get()
 
           when "pending"

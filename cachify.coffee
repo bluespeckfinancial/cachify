@@ -173,7 +173,7 @@ module.exports = (options = 60, depreceatedRedisPort = 6379, depreceatedRedisHos
       defaultExpiry: options
     if _.isNumber(depreceatedRedisPort)
       options.redisPort = depreceatedRedisPort
-      options.redisHot = depreceatedRedisHost
+      options.redisHost = depreceatedRedisHost
     else
       options.redisPubsub = depreceatedRedisPort
       options.redisStore = depreceatedRedisHost
